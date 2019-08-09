@@ -9,34 +9,17 @@ namespace SpiceSharp.Simulations.Behaviors
     /// <summary>
     /// Base class for a behavior that exports properties by using attributes on properties and reflection.
     /// </summary>
-    public abstract class ExportingBehavior : IBehavior, IPropertyExporter
+    public abstract class ExportingBehavior : Behavior, IPropertyExporter
     {
-        /// <summary>
-        /// Gets the name of the behavior.
-        /// </summary>
-        public string Name { get; }
+        // TODO: This whole method and the IPropertyExporter will become unnecessary, because simulations are accessible and there's
+        // no need anymore for the CreateExportMethod class. The simulation is stored with the behavior so no extra argument is needed.
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExportingBehavior"/> class.
         /// </summary>
         /// <param name="name">The name of the behavior.</param>
         protected ExportingBehavior(string name)
-        {
-            Name = name;
-        }
-
-        /// <summary>
-        /// Setup the behavior for the specified simulation.
-        /// </summary>
-        /// <param name="simulation">The simulation.</param>
-        /// <param name="provider">The provider.</param>
-        public abstract void Setup(Simulation simulation, SetupDataProvider provider);
-
-        /// <summary>
-        /// Destroy the behavior.
-        /// </summary>
-        /// <param name="simulation">The simulation.</param>
-        public virtual void Unsetup(Simulation simulation)
+            : base(name)
         {
         }
 

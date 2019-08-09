@@ -9,36 +9,40 @@ namespace SpiceSharp.Components.ResistorBehaviors
     /// <summary>
     /// General behavior for <see cref="Resistor"/>
     /// </summary>
-    public class BiasingBehavior : TemperatureBehavior, IBiasingBehavior, IConnectedBehavior
+    public class BiasingBehavior : TemperatureBehavior, IBiasingBehavior
     {
         /// <summary>
         /// Gets the voltage across the resistor.
         /// </summary>
         [ParameterName("v"), ParameterInfo("Voltage")]
-        public double GetVoltage(BaseSimulationState state)
+        public double GetVoltage()
         {
-            state.ThrowIfNull(nameof(state));
-            return state.Solution[PosNode] - state.Solution[NegNode];
+            // There is no argument necessary anymore. The real-state can also be cached
+            if (_state == null)
+                throw new CircuitException("Behavior '{0}' is not bound to a simulation".FormatString(Name));
+            return _state.Solution[PosNode] - _state.Solution[NegNode];
         }
 
         /// <summary>
         /// Gets the current through the resistor.
         /// </summary>
         [ParameterName("i"), ParameterInfo("Current")]
-        public double GetCurrent(BaseSimulationState state)
+        public double GetCurrent()
         {
-            state.ThrowIfNull(nameof(state));
-            return (state.Solution[PosNode] - state.Solution[NegNode]) * Conductance;
+            if (_state == null)
+                throw new CircuitException("Behavior '{0}' is not bound to a simulation".FormatString(Name));
+            return (_state.Solution[PosNode] - _state.Solution[NegNode]) * Conductance;
         }
 
         /// <summary>
         /// Gets the power dissipated by the resistor.
         /// </summary>
         [ParameterName("p"), ParameterInfo("Power")]
-        public double GetPower(BaseSimulationState state)
+        public double GetPower()
         {
-			state.ThrowIfNull(nameof(state));
-            var v = state.Solution[PosNode] - state.Solution[NegNode];
+            if (_state == null)
+                throw new CircuitException("Behavior '{0}' is not bound to a simulation".FormatString(Name));
+            var v = _state.Solution[PosNode] - _state.Solution[NegNode];
             return v * v * Conductance;
         }
 
@@ -73,6 +77,11 @@ namespace SpiceSharp.Components.ResistorBehaviors
         protected MatrixElement<double> NegPosPtr { get; private set; }
 
         /// <summary>
+        /// The simulation state that the behavior is bound to
+        /// </summary>
+        private BaseSimulationState _state;
+
+        /// <summary>
         /// Creates a new instance of the <see cref="BiasingBehavior"/> class.
         /// </summary>
         /// <param name="name">Name</param>
@@ -81,14 +90,25 @@ namespace SpiceSharp.Components.ResistorBehaviors
         }
 
         /// <summary>
-        /// Connect the behavior to nodes
+        /// Setup the behavior.
         /// </summary>
-        /// <param name="pins">Pins</param>
-        public void Connect(params int[] pins)
+        /// <param name="simulation">The simulation.</param>
+        /// <param name="provider">The setup data provider.</param>
+        public override void Setup(Simulation simulation, SetupDataProvider provider)
         {
-            pins.ThrowIfNot(nameof(pins), 2);
-            PosNode = pins[0];
-            NegNode = pins[1];
+            base.Setup(simulation, provider);
+            _state = ((BaseSimulation)Simulation).RealState.ThrowIfNull("State");
+
+            // Connections
+            var p = (ComponentDataProvider)provider;
+            PosNode = p.Pins[0];
+            NegNode = p.Pins[1];
+
+            var solver = _state.Solver;
+            PosPosPtr = solver.GetMatrixElement(PosNode, PosNode);
+            NegNegPtr = solver.GetMatrixElement(NegNode, NegNode);
+            PosNegPtr = solver.GetMatrixElement(PosNode, NegNode);
+            NegPosPtr = solver.GetMatrixElement(NegNode, PosNode);
         }
 
         /// <summary>
@@ -98,21 +118,30 @@ namespace SpiceSharp.Components.ResistorBehaviors
         /// <param name="solver">Solver</param>
         public void GetEquationPointers(VariableSet variables, Solver<double> solver)
         {
-            solver.ThrowIfNull(nameof(solver));
-
-            // Get matrix elements
-            PosPosPtr = solver.GetMatrixElement(PosNode, PosNode);
-            NegNegPtr = solver.GetMatrixElement(NegNode, NegNode);
-            PosNegPtr = solver.GetMatrixElement(PosNode, NegNode);
-            NegPosPtr = solver.GetMatrixElement(NegNode, PosNode);
         }
-        
+
+        /// <summary>
+        /// Unsetup the behavior.
+        /// </summary>
+        /// <param name="simulation"></param>
+        public override void Unsetup(Simulation simulation)
+        {
+            PosPosPtr = null;
+            NegNegPtr = null;
+            PosNegPtr = null;
+            NegPosPtr = null;
+            _state = null;
+            base.Unsetup(simulation);
+        }
+
         /// <summary>
         /// Execute behavior
         /// </summary>
         /// <param name="simulation">Base simulation</param>
         public void Load(BaseSimulation simulation)
         {
+            // TODO: There's already no reference to the simulation in here, because
+            // it only needs the matrix elements.
             var conductance = Conductance;
             PosPosPtr.Value += conductance;
             NegNegPtr.Value += conductance;

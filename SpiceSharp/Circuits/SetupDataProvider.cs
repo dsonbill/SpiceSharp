@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using SpiceSharp.Behaviors;
 
-namespace SpiceSharp.Behaviors
+namespace SpiceSharp
 {
     /// <summary>
     /// Class that can be used for setting up a <see cref="Behavior" />.

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using SpiceSharp.Behaviors;
 using SpiceSharp.Circuits;
 using SpiceSharp.Simulations;
@@ -72,7 +73,12 @@ namespace SpiceSharp.Components
         /// <param name="simulation">The simulation.</param>
         protected override void SetupBehavior(IBehavior behavior, Simulation simulation)
         {
-            base.SetupBehavior(behavior, simulation);
+            // Would probably become more streamlined here, I kind of have to hack in a solution to remain compatible with the previous framework.
+            var provider = BuildSetupDataProvider(simulation.EntityParameters, simulation.EntityBehaviors);
+            ((ComponentDataProvider)provider).Connect(GetNodeIndexes(simulation.Variables).ToArray());
+
+            behavior.Setup(simulation, provider);
+
             if (behavior is IConnectedBehavior conn)
             {
                 var pins = ApplyConnections(simulation.Variables);
@@ -91,7 +97,9 @@ namespace SpiceSharp.Components
         /// </returns>
         protected override SetupDataProvider BuildSetupDataProvider(ParameterPool parameters, BehaviorPool behaviors)
         {
-            var provider = base.BuildSetupDataProvider(parameters, behaviors);
+            var provider = new ComponentDataProvider();
+            provider.Add("entity", parameters[Name]);
+            provider.Add("entity", behaviors[Name]);
 
             // Add our model parameters and behaviors
             if (!string.IsNullOrEmpty(Model))

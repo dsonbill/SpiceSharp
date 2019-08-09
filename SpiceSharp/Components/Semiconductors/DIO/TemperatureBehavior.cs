@@ -88,6 +88,7 @@ namespace SpiceSharp.Components.DiodeBehaviors
         /// <param name="provider">Data provider</param>
         public override void Setup(Simulation simulation, SetupDataProvider provider)
         {
+            base.Setup(simulation, provider);
             provider.ThrowIfNull(nameof(provider));
 
             // Get base configuration
@@ -107,13 +108,14 @@ namespace SpiceSharp.Components.DiodeBehaviors
         /// <param name="simulation">Base simulation</param>
         public void Temperature(BaseSimulation simulation)
         {
-            simulation.ThrowIfNull(nameof(simulation));
+            Simulation.ThrowIfNull(nameof(simulation));
+            var sim = (BaseSimulation)Simulation;
 
             var xcbv = 0.0;
 
             // loop through all the instances
             if (!BaseParameters.Temperature.Given)
-                BaseParameters.Temperature.RawValue = simulation.RealState.Temperature;
+                BaseParameters.Temperature.RawValue = sim.RealState.Temperature;
             Vt = Constants.KOverQ * BaseParameters.Temperature;
             Vte = ModelParameters.EmissionCoefficient * Vt;
 

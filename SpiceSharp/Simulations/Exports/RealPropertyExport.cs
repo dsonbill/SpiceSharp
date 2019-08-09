@@ -68,6 +68,8 @@ namespace SpiceSharp.Simulations
                     if (eb.TryGetValue(typeof(IBiasingBehavior), out var behavior) &&
                         behavior is IPropertyExporter exporter)
                         exporter.CreateExportMethod(Simulation, PropertyName, out extractor, Comparer);
+                    if (eb.TryGetValue(typeof(IBiasingBehavior), out behavior))
+                        extractor = behavior.CreateGetter<double>(PropertyName, Comparer);
                 }
 
                 // 3) Thirdly, check temperature behavior

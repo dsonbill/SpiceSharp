@@ -20,6 +20,11 @@ namespace SpiceSharp.Behaviors
         public string Name { get; }
 
         /// <summary>
+        /// Gets the <see cref="Simulation"/> that this behavior is bound to.
+        /// </summary>
+        protected Simulation Simulation { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Behavior"/> class.
         /// </summary>
         /// <param name="name">The identifier of the behavior.</param>
@@ -38,6 +43,11 @@ namespace SpiceSharp.Behaviors
         /// <param name="provider">The data provider.</param>
         public virtual void Setup(Simulation simulation, SetupDataProvider provider)
         {
+            // TODO: We will call this method "Bind()" in the future.
+            // The behavior, when bound to a simulation, is free to extract data from the simulation.
+            if (Simulation != null)
+                throw new CircuitException("Behavior '{0}' is already bound to simulation '{1}'".FormatString(Name, Simulation.Name));
+            Simulation = simulation.ThrowIfNull(nameof(simulation));
         }
 
         /// <summary>
@@ -46,6 +56,8 @@ namespace SpiceSharp.Behaviors
         /// <param name="simulation">The simulation.</param>
         public virtual void Unsetup(Simulation simulation)
         {
+            // TODO: We will call this method "Unbind()" in the future.
+            Simulation = null;
         }
 
         /// <summary>
@@ -58,6 +70,8 @@ namespace SpiceSharp.Behaviors
         /// <returns></returns>
         public Func<T> CreateGetter<T>(Simulation simulation, string name, IEqualityComparer<string> comparer = null)
         {
+            // TODO: This whole part will not be necessary anymore, because the simulation isn't needed as an argument.
+
             // First find the method
             comparer = comparer ?? EqualityComparer<string>.Default;
             var method = Reflection.GetNamedMembers(this, name, comparer).FirstOrDefault(m => m is MethodInfo) as MethodInfo;

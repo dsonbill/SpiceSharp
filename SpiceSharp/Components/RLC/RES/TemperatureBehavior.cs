@@ -9,7 +9,7 @@ namespace SpiceSharp.Components.ResistorBehaviors
     /// <summary>
     /// Temperature behavior for a <see cref="Resistor"/>
     /// </summary>
-    public class TemperatureBehavior : ExportingBehavior, ITemperatureBehavior
+    public class TemperatureBehavior : Behavior, ITemperatureBehavior
     {
         /// <summary>
         /// The minimum resistance for any resistor.
@@ -45,6 +45,7 @@ namespace SpiceSharp.Components.ResistorBehaviors
         /// <param name="provider">The setup data provider</param>
         public override void Setup(Simulation simulation, SetupDataProvider provider)
         {
+            base.Setup(simulation, provider);
 			provider.ThrowIfNull(nameof(provider));
 
             // Get parameters
@@ -59,14 +60,17 @@ namespace SpiceSharp.Components.ResistorBehaviors
         /// <param name="simulation">Base simulation</param>
         public void Temperature(BaseSimulation simulation)
         {
-			simulation.ThrowIfNull(nameof(simulation));
-
+            // TODO: There is no simulation argument necessary anymore.
+            // If the typecast is annoying, it's also possible to cache it as a local variable.
+            if (Simulation == null)
+                throw new CircuitException("Behavior {0} is not bound".FormatString(Name));
+            var sim = (BaseSimulation)Simulation;
             double factor;
             double resistance = BaseParameters.Resistance;
 
             // Default Value Processing for Resistor Instance
             if (!BaseParameters.Temperature.Given)
-                BaseParameters.Temperature.RawValue = simulation.RealState.Temperature;
+                BaseParameters.Temperature.RawValue = sim.RealState.Temperature;
             if (!BaseParameters.Width.Given)
                 BaseParameters.Width.RawValue = ModelParameters?.DefaultWidth ?? 0.0;
 

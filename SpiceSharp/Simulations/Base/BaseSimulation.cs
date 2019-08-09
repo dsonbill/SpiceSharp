@@ -124,17 +124,11 @@ namespace SpiceSharp.Simulations
         /// <param name="circuit">The circuit that will be used.</param>
         protected override void Setup(EntityCollection circuit)
         {
-            circuit.ThrowIfNull(nameof(circuit));
-            base.Setup(circuit);
-
-            // Get behaviors and configuration data
+            // Setup configuration
             var config = Configurations.Get<BaseConfiguration>().ThrowIfNull("base configuration");
             DcMaxIterations = config.DcMaxIterations;
             AbsTol = config.AbsoluteTolerance;
             RelTol = config.RelativeTolerance;
-            _temperatureBehaviors = EntityBehaviors.GetBehaviorList<ITemperatureBehavior>();
-            _loadBehaviors = EntityBehaviors.GetBehaviorList<IBiasingBehavior>();
-            _initialConditionBehaviors = EntityBehaviors.GetBehaviorList<IInitialConditionBehavior>();
 
             // Create the state for this simulation
             RealState = new BaseSimulationState
@@ -146,9 +140,16 @@ namespace SpiceSharp.Simulations
             var strategy = RealState.Solver.Strategy;
             strategy.RelativePivotThreshold = config.RelativePivotThreshold;
             strategy.AbsolutePivotThreshold = config.AbsolutePivotThreshold;
-
-            // Setup the load behaviors
             _realStateLoadArgs = new LoadStateEventArgs(RealState);
+
+            // Setup the circuit entities and cache the types that we are interested in.
+            circuit.ThrowIfNull(nameof(circuit));
+            base.Setup(circuit);
+            _temperatureBehaviors = EntityBehaviors.GetBehaviorList<ITemperatureBehavior>();
+            _loadBehaviors = EntityBehaviors.GetBehaviorList<IBiasingBehavior>();
+            _initialConditionBehaviors = EntityBehaviors.GetBehaviorList<IInitialConditionBehavior>();
+
+            // TODO: Get equation pointers (legacy), will be removed in the future
             for (var i = 0; i < _loadBehaviors.Count; i++)
                 _loadBehaviors[i].GetEquationPointers(Variables, RealState.Solver);
             RealState.Setup(Variables);
