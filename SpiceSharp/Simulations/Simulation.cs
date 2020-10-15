@@ -39,7 +39,7 @@ namespace SpiceSharp.Simulations
         /// <summary>
         /// Gets the current status of the simulation.
         /// </summary>
-        public Statuses Status { get; private set; } = Statuses.None;
+        public Statuses Status { get; set; } = Statuses.None;
 
         /// <summary>
         /// Gets a set of <see cref="ParameterSet" /> that hold the configurations for the simulation.
